@@ -16,12 +16,11 @@ inquirer.registerPrompt('checkbox-plus', inquirerCheckboxPlusPrompt);
 
 async function fetchMetadata() {
     try {
-        const response = await axios.get(METADATA_URL, {
+        return (await axios.get(METADATA_URL, {
             headers: {
                 "Content-Type":"application/vnd.initializr.v2.3+json"
             }
-        });
-        return response.data;
+        })).data;
     } catch (error) {
         console.error("Error fetching metadata:", error.message);
         throw error;
@@ -147,7 +146,6 @@ async function promptUser(metadata) {
     try{
         const basicAnswers = await inquirer.prompt(basicQuestions);
     
-        console.log("Fetching compatible dependencies......");
         const allDependenciesBySelectedBootVersion = new Set(Object.keys((await axios.get(`${BASE_URL}/dependencies?bootVersion=${basicAnswers.bootVersion}`, {
             headers: {
                 "Content-Type": "application/vnd.initializr.v2.3+json"
@@ -215,7 +213,6 @@ async function generateProject(answers) {
             console.log(`Project extracted successfully to: ${path.join(outputDir, answers.artifactId)}`);
 
             fs.unlinkSync(zipFilePath);
-            console.log(`Zip file removed.`);
         } else {
             console.log(`Project not extracted. You can manually extract '${zipFileName}'.`);
         }
@@ -227,7 +224,6 @@ async function generateProject(answers) {
 }
 
 async function init() {
-    console.log('Fetching project metadata...');
     try{
         const metadata = await fetchMetadata();
         const answers = await promptUser(metadata);
