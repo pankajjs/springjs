@@ -16,7 +16,11 @@ inquirer.registerPrompt('checkbox-plus', inquirerCheckboxPlusPrompt);
 
 async function fetchMetadata() {
     try {
-        const response = await axios.get(METADATA_URL);
+        const response = await axios.get(METADATA_URL, {
+            headers: {
+                "Content-Type":"application/vnd.initializr.v2.3+json"
+            }
+        });
         return response.data;
     } catch (error) {
         console.error("Error fetching metadata from Spring Initializr:", error.message);
@@ -24,108 +28,11 @@ async function fetchMetadata() {
     }
 }
 
-function parseVersion(version) {
-    const parts = version.split(/[-.]/);
-    const numericParts = [];
-    let qualifier = null;
-
-    for (const part of parts) {
-        if (/^\d+$/.test(part)) {
-            numericParts.push(parseInt(part, 10));
-        } else {
-            qualifier = part;
-            break;
-        }
-    }
-    while (numericParts.length < 3) {
-        numericParts.push(0);
-    }
-    return { major: numericParts[0], minor: numericParts[1], patch: numericParts[2], qualifier: qualifier || '' };
-}
-
-function compareVersions(v1, v2) {
-    if (v1.major !== v2.major) return v1.major - v2.major;
-    if (v1.minor !== v2.minor) return v1.minor - v2.minor;
-    if (v1.patch !== v2.patch) return v1.patch - v2.patch;
-    
-    // Qualifier comparison
-    const getQualifierRank = (q) => {
-        if (!q || q === 'RELEASE') return 4;
-        if (q.startsWith('RC')) return 3;
-        if (q.startsWith('M')) return 2;
-        if (q.includes('SNAPSHOT')) return 1;
-        return 0; // Unknown/other
-    };
-
-    const r1 = getQualifierRank(v1.qualifier);
-    const r2 = getQualifierRank(v2.qualifier);
-
-    if (r1 !== r2) return r1 - r2;
-
-    // If ranks are same (e.g. both RC or both Snapshot), compare strings
-    // But for Release/Empty (rank 4), they are equal
-    if (r1 === 4) return 0;
-    
-    // For M1 vs M2, RC1 vs RC2
-    return v1.qualifier.localeCompare(v2.qualifier);
-}
-
-function checkRange(versionStr, rangeStr) {
-    if (!rangeStr) return true; // No range specified, implies valid
-
-    const version = parseVersion(versionStr);
-    
-    // Spring ranges: e.g., "[3.0.0, 4.0.0)", "3.1.0" (starting from), etc.
-    // Simple parsing for bracket/paren notation
-    const rangeDetails = rangeStr.trim();
-    
-    let start, end, startInclusive, endInclusive;
-
-    // Check strict range first
-    if ((rangeDetails.startsWith('[') || rangeDetails.startsWith('(')) && 
-        (rangeDetails.endsWith(']') || rangeDetails.endsWith(')'))) {
-            
-        const parts = rangeDetails.split(',');
-        if (parts.length === 2) {
-            startInclusive = rangeDetails.startsWith('[');
-            endInclusive = rangeDetails.endsWith(']');
-            
-            start = parts[0].slice(1).trim();
-            end = parts[1].slice(0, -1).trim();
-        } else {
-            // Unexpected format, assume valid
-            return true;
-        }
-    } else {
-        // "3.1.0" means >= 3.1.0
-        start = rangeDetails;
-        startInclusive = true;
-        end = null;
-    }
-
-    if (start) {
-        const startVer = parseVersion(start);
-        const comp = compareVersions(version, startVer);
-        if (startInclusive && comp < 0) return false;
-        if (!startInclusive && comp <= 0) return false;
-    }
-
-    if (end) {
-        const endVer = parseVersion(end);
-        const comp = compareVersions(version, endVer);
-        if (endInclusive && comp > 0) return false;
-        if (!endInclusive && comp >= 0) return false;
-    }
-
-    return true;
-}
-
-function flattenDependencies(metadata, bootVersion) {
-    //  filter dependencies by compatible versionRange
+function flattenDependencies(metadata) {
     const dependencies = [];
     if (metadata.dependencies && metadata.dependencies.values) {
         metadata.dependencies.values.forEach(group => {
-           dependencies.push(...group.values.map(v => ({name: v.name, value: v.id, versionRange: v.versionRange})));
+            dependencies.push(...group.values.map(v => ({name: v.name, value: v.id})));
         });
     }
     return dependencies;
@@ -234,13 +141,21 @@ async function promptUser(metadata) {
             name: 'javaVersion',
             message: 'Java:',
             choices: metadata.javaVersion.values.map(v => ({ name: v.name, value: v.id })),
-            default: metadata.javaVersion.default
+            default: metadata.javaVersion.default,
         }
     ];
 
     const basicAnswers = await inquirer.prompt(basicQuestions);
-    const allDependencies = flattenDependencies(metadata, basicAnswers.bootVersion);
-    const selectedDependencies = await promptForDependencies(allDependencies);
+    
+    console.log("Fetching compatible dependencies......");
+    const allDependenciesBySelectedBootVersion = new Set(Object.keys((await axios.get(`${BASE_URL}/dependencies?bootVersion=${basicAnswers.bootVersion}`, {
+        headers: {
+            "Content-Type": "application/vnd.initializr.v2.3+json"
+        }
+    })).data.dependencies));
+    const allDependencies = flattenDependencies(metadata);
+    const filteredDependencies = allDependencies.filter(d => allDependenciesBySelectedBootVersion.has(d.value));
+    const selectedDependencies = await promptForDependencies(filteredDependencies);
 
     basicAnswers.dependencies = selectedDependencies;
 
