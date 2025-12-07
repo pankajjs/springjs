@@ -1,4 +1,4 @@
-# SpringJS CLI
+# springjs
 
 A command-line interface tool to generate Spring Boot projects using Spring Initializr.
 
