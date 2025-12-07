@@ -1,4 +1,4 @@
-# springjs
+# springlizr
 
 A command-line interface tool to generate Spring Boot projects using Spring Initializr.
 
@@ -7,7 +7,7 @@ A command-line interface tool to generate Spring Boot projects using Spring Init
 ### Global Installation (from npm - when published)
 
 ```bash
-npm install -g springjs
+npm install -g springlizr
 ```
 
 ### Local Installation (for development)
@@ -29,7 +29,7 @@ npm link
 Simply run the command in your terminal:
 
 ```bash
-springjs
+springlizr
 ```
 ## Publishing to npm
 
@@ -48,7 +48,7 @@ npm login
 
 1. **Check package name availability**:
    ```bash
-   npm search springjs
+   npm search springlizr
    ```
    If the name is taken, update the `name` field in `package.json`
 
@@ -66,5 +66,5 @@ npm login
 
 4. **Verify publication**:
    ```bash
-   npm view springjs
+   npm view springlizr
    ```
