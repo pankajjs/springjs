@@ -1,15 +1,18 @@
 {
-  "name": "spring-cli",
+  "name": "springjs",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "bin/index.js",
   "type": "module",
+  "bin": {  
+    "springjs": "./bin/index.js"  
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["spring", "spring-boot", "cli", "generator", "initializr", "java"],
+  "author": "pankajjs",
   "license": "ISC",
-  "description": "",
+  "description": "A CLI tool to generate Spring Boot projects using Spring Initializr",
   "dependencies": {
     "adm-zip": "^0.5.16",
     "axios": "^1.13.2",

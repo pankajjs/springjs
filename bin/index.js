@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 import inquirer from 'inquirer';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
@@ -240,10 +242,8 @@ async function promptUser(metadata) {
     const allDependencies = flattenDependencies(metadata, basicAnswers.bootVersion);
     const selectedDependencies = await promptForDependencies(allDependencies);
 
-    // Merge dependencies into answers
     basicAnswers.dependencies = selectedDependencies;
 
-    // 3. Post-selection prompts (Extraction)
     const { extractProject } = await inquirer.prompt([
         {
             type: 'confirm',
@@ -294,7 +294,7 @@ async function generateProject(answers) {
             const zip = new AdmZip(zipFilePath);
             zip.extractAllTo(outputDir, true);
             console.log(`Project extracted successfully to: ${path.join(outputDir, answers.artifactId)}`);
-            // Cleanup zip
+
             fs.unlinkSync(zipFilePath);
             console.log(`Zip file removed.`);
         } else {
@@ -320,7 +320,5 @@ async function init() {
     const answers = await promptUser(metadata);
     await generateProject(answers);
 }
-
-
 
 init();

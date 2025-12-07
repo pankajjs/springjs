@@ -1,1 +1,9 @@
-node_modules
+node_modules/
+*.log
+.DS_Store
+.env
+demo/
+demo.zip
+*.zip
+.vscode/
+.idea/

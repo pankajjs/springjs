@@ -1,0 +1,7 @@
+demo/
+demo.zip
+*.zip
+.DS_Store
+.vscode/
+.idea/
+*.log
