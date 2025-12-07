@@ -23,8 +23,8 @@ async function fetchMetadata() {
         });
         return response.data;
     } catch (error) {
-        console.error("Error fetching metadata from Spring Initializr:", error.message);
-        process.exit(1);
+        console.error("Error fetching metadata:", error.message);
+        throw error;
     }
 }
 
@@ -144,33 +144,37 @@ async function promptUser(metadata) {
             default: metadata.javaVersion.default,
         }
     ];
-
-    const basicAnswers = await inquirer.prompt(basicQuestions);
+    try{
+        const basicAnswers = await inquirer.prompt(basicQuestions);
     
-    console.log("Fetching compatible dependencies......");
-    const allDependenciesBySelectedBootVersion = new Set(Object.keys((await axios.get(`${BASE_URL}/dependencies?bootVersion=${basicAnswers.bootVersion}`, {
-        headers: {
-            "Content-Type": "application/vnd.initializr.v2.3+json"
-        }
-    })).data.dependencies));
-    const allDependencies = flattenDependencies(metadata);
-    const filteredDependencies = allDependencies.filter(d => allDependenciesBySelectedBootVersion.has(d.value));
-    const selectedDependencies = await promptForDependencies(filteredDependencies);
+        console.log("Fetching compatible dependencies......");
+        const allDependenciesBySelectedBootVersion = new Set(Object.keys((await axios.get(`${BASE_URL}/dependencies?bootVersion=${basicAnswers.bootVersion}`, {
+            headers: {
+                "Content-Type": "application/vnd.initializr.v2.3+json"
+            }
+        })).data.dependencies));
+        const allDependencies = flattenDependencies(metadata);
+        const filteredDependencies = allDependencies.filter(d => allDependenciesBySelectedBootVersion.has(d.value));
+        const selectedDependencies = await promptForDependencies(filteredDependencies);
 
-    basicAnswers.dependencies = selectedDependencies;
+        basicAnswers.dependencies = selectedDependencies;
 
-    const { extractProject } = await inquirer.prompt([
-        {
-            type: 'confirm',
-            name: 'extractProject',
-            message: 'Do you want to extract the project after downloading?',
-            default: true
-        }
-    ]);
-    
-    basicAnswers.extractProject = extractProject;
+        const { extractProject } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'extractProject',
+                message: 'Do you want to extract the project after downloading?',
+                default: true
+            }
+        ]);
+        
+        basicAnswers.extractProject = extractProject;
 
-    return basicAnswers;
+        return basicAnswers;
+    }catch(error){
+        console.error('Failed to prompt user: ', error.message);
+        throw error;
+    }
 }
 
 async function generateProject(answers) {
@@ -217,23 +221,21 @@ async function generateProject(answers) {
         }
 
     } catch (error) {
-        console.error('Error generating project:');
-        if (error.response) {
-            console.error(`Status: ${error.response.status}`);
-            try {
-                console.error(error.response.data.toString());
-            } catch (e) {}
-        } else {
-            console.error(error.message);
-        }
+        console.error('Failed to generate project: ', error.message);
+        throw error;   
     }
 }
 
 async function init() {
     console.log('Fetching project metadata...');
-    const metadata = await fetchMetadata();
-    const answers = await promptUser(metadata);
-    await generateProject(answers);
+    try{
+        const metadata = await fetchMetadata();
+        const answers = await promptUser(metadata);
+        await generateProject(answers);
+    }catch(error){
+        console.log("-----------------------")
+        console.log("Report an issue at https://github.com/pankajjs/springjs/issues");
+    }
 }
 
 init();
