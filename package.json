@@ -1,0 +1,20 @@
+{
+  "name": "spring-cli",
+  "version": "1.0.0",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "axios": "^1.13.2",
+    "inquirer": "^8.2.7",
+    "inquirer-checkbox-plus-prompt": "^1.4.2",
+    "inquirer-search-list": "^1.2.6"
+  }
+}
